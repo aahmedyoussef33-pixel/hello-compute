@@ -1,90 +1,351 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
-{
-  "name": "Ubuntu",
-  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-  "image": "mcr.microsoft.com/devcontainers/base:noble",
-  "features": {
-    "ghcr.io/devcontainers/features/node:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
-  },
-  "portsAttributes": {
-    "4173": {
-      "label": "Origin",
-      "onAutoForward": "openPreview"
-    },
-    "7676": {
-      "label": "Compute",
-      "onAutoForward": "openPreview"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Birthday Card for Salma</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --slytherin-url: url('https://i.ibb.co/3WWhtv4/slytherin.jpg');
     }
-  },
-  "updateContentCommand": {
-    "cinstall": "npm install",
-    "vinstall": "cd origin && npm install"
-  },
-  "postAttachCommand": {
-    "inform": "bash helpers/welcome.sh",
-    "build": "npm run start",
-    "origin": "cd origin && npm run build && npm run preview"
-  },
-  "waitFor": "updateContentCommand",
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "jkearins.action-buttons-ext@0.1.1",
-        "dbaeumer.vscode-eslint"
-      ],
-      "settings": {
-        "files.exclude": {
-          "package-lock.json": true,
-          ".gitignore": true,
-          "node_modules/": true,
-		  "origin/node_modules": true,
-		  "origin/dist": true,
-		  "origin/package-lock.json": true
-        },
-        "editor.minimap.enabled": false,
-        "chat.sendElementsToChat.enabled": false,
-        "actionButtons": {
-          "commands": [
-            {
-              "name": "🌈 Prettify",
-              "singleInstance": true,
-              "useVsCodeApi": true,
-              "command": "editor.action.formatDocument",
-              "tooltip": "Tidy up your code"
-            },
-            {
-              "name": "💻 Terminal",
-              "singleInstance": true,
-              "useVsCodeApi": true,
-              "command": "workbench.action.terminal.toggleTerminal",
-              "tooltip": "Open a terminal"
-            },
-            {
-              "name": "🔎 Split",
-              "singleInstance": true,
-              "useVsCodeApi": true,
-              "command": "workbench.action.moveEditorToNextGroup",
-              "tooltip": "Move your active tab to the side"
-            },
-            {
-              "name": "🔗 Share",
-              "singleInstance": true,
-              "command": "bash helpers/share.sh",
-              "tooltip": "Grab a link to share your draft site"
-            },
-            {
-              "name": "🚀 Publish",
-              "singleInstance": true,
-              "command": "bash helpers/publish.sh",
-              "tooltip": "Publish your content to Fastly Compute"
-            }
-          ],
-          "defaultColor": "none",
-          "reloadButton": null
-        }
-      }
+    *{box-sizing:border-box}
+    html,body{height:100%; margin:0; font-family: "Trebuchet MS", sans-serif;}
+    body{overflow:hidden; background:#000; color:#fff}
+
+    /* كل صفحة تأخذ نفس الخلفية (منزل سليذرين) */
+    .page{
+      position:absolute;
+      inset:0;
+      display:none;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+      padding:20px;
+      background-image: var(--slytherin-url);
+      background-size:cover;
+      background-position:center;
+      /* طبقة شفافة عشان النص يظهر بوضوح على الصورة */
+      background-blend-mode: multiply;
     }
+    .page::before{
+      content:"";
+      position:absolute; inset:0;
+      background: rgba(0,0,0,0.35);
+      pointer-events:none;
+    }
+    .page.active{display:flex}
+
+    h1,h2 { margin:0; z-index:2 }
+    p{ margin:8px 0 0; z-index:2 }
+
+    .btn{
+      z-index:2;
+      margin-top:18px;
+      padding:10px 18px;
+      border-radius:10px;
+      border:2px solid rgba(255,255,255,0.9);
+      background: rgba(0,0,0,0.45);
+      color:#fff;
+      cursor:pointer;
+      font-size:18px;
+    }
+
+    /* منطقة البالونات فوق كل الصفحات */
+    #balloons{
+      position:fixed; inset:0; pointer-events:none; z-index:1; overflow:hidden;
+    }
+    .balloon{
+      position:absolute; font-size:40px; user-select:none;
+      animation: rise linear infinite;
+    }
+    @keyframes rise {
+      from { transform: translateY(100vh) }
+      to   { transform: translateY(-120px) }
+    }
+
+    /* صفحة الصاروخ: */
+    #p3 #rocketEl{
+      font-size:90px;
+      z-index:2;
+      transition: transform 2.2s linear;
+      will-change: transform;
+      display:inline-block;
+    }
+    /* class تضيف حركة الصاروخ (تُضاف بواسطة JS عند تشغيل الصفحة) */
+    .launch {
+      transform: translateY(-80vh) scale(0.7);
+    }
+
+    /* كونفيتي */
+    .confetti {
+      position:fixed; width:9px; height:12px; z-index:3; pointer-events:none;
+      opacity:1; border-radius:2px;
+      transform-origin:center;
+    }
+
+    /* نص صغير على اليمين في كل صفحة (Best regards) */
+    .signature {
+      position:absolute; right:12px; bottom:12px; font-size:14px;
+      color:rgba(255,255,255,0.9); z-index:2;
+    }
+
+    /* صفحة النهاية (تحية) */
+    #p5 h1 { color: gold; text-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+  </style>
+</head>
+<body>
+
+  <!-- بالونات (تعويم) -->
+  <div id="balloons"></div>
+
+  <!-- Pages -->
+  <div class="page active" id="p1">
+    <div style="z-index:2">
+      <h1>🌞 Hello multiverse sun 🌞</h1>
+      <button class="btn" onclick="showPage(2)">Next ➜</button>
+    </div>
+    <div class="signature">Best regards: Peverll</div>
+  </div>
+
+  <div class="page" id="p2">
+    <div style="z-index:2">
+      <h1>🥳 Are you ready for your birthday? 🎂</h1>
+      <button class="btn" onclick="showPage(3)">Next ➜</button>
+    </div>
+    <div class="signature">Best regards: Peverll</div>
+  </div>
+
+  <div class="page" id="p3">
+    <canvas id="fireworksCanvas" style="position:absolute; inset:0; z-index:1;"></canvas>
+
+    <div style="z-index:2">
+      <div id="rocketEl">🚀</div>
+      <h1 id="birthdayText" style="display:none; margin-top:18px">🎉 Happy Birthday Salma 🎂</h1>
+      <p id="note" style="display:none; margin-top:8px">Best regards: Peverll</p>
+      <button class="btn" id="next3" style="display:none" onclick="showPage(4)">Next ➜</button>
+    </div>
+    <div class="signature">Best regards: Peverll</div>
+  </div>
+
+  <div class="page" id="p4">
+    <div style="z-index:2">
+      <h2>✨ I wish you a happy life ✨<br>Umm Adam</h2>
+      <button class="btn" onclick="showPage(5)">Next ➜</button>
+    </div>
+    <div class="signature">Best regards: Peverll</div>
+  </div>
+
+  <div class="page" id="p5">
+    <div style="z-index:2">
+      <h1>مع تحيات الباشمهندس الطيار ✈️</h1>
+    </div>
+    <div class="signature">Best regards: Peverll</div>
+  </div>
+
+  <!-- أصوات -->
+  <!-- ملاحظة: المتصفحات تمنع التشغيل التلقائي قبل تفاعل المستخدم؛ الضغط على الأزرار يعتبر تفاعلًا -->
+  <audio id="applause" src="https://www.soundjay.com/human/applause-8.mp3" preload="auto"></audio>
+  <audio id="explode"  src="https://www.soundjay.com/misc/explosion-01.mp3" preload="auto"></audio>
+  <audio id="fanfare"  src="https://www.soundjay.com/misc/success-fanfare-trumpets-01.mp3" preload="auto"></audio>
+
+<script>
+/* ---------- helpers ---------- */
+function safePlay(audioEl){
+  if(!audioEl) return;
+  // attempt play and ignore errors (browser autoplay policies)
+  const p = audioEl.play();
+  if(p && p.catch) p.catch(()=>{/* ignore */});
+}
+
+/* ---------- balloons generation ---------- */
+const balloons = document.getElementById('balloons');
+function addBalloon(){
+  const b = document.createElement('div');
+  b.className = 'balloon';
+  b.style.left = (Math.random()*90) + 'vw';
+  const size = 30 + Math.random()*40;
+  b.style.fontSize = size + 'px';
+  b.style.animationDuration = (5 + Math.random()*6) + 's';
+  const colors = ["🎈","🎈","🎈","🎈"]; // emoji same, color visible via bg image; keep emoji
+  b.innerText = '🎈';
+  b.style.top = '100vh';
+  balloons.appendChild(b);
+  // remove after animation
+  setTimeout(()=>{ try{ b.remove() } catch(e){} }, (parseFloat(b.style.animationDuration)||7)*1000 + 500);
+}
+let balloonInterval = setInterval(addBalloon, 700);
+for(let i=0;i<8;i++) addBalloon();
+
+/* ---------- page navigation & sounds ---------- */
+let current = 1;
+const applause = document.getElementById('applause');
+const explode  = document.getElementById('explode');
+const fanfare  = document.getElementById('fanfare');
+
+function showPage(n){
+  // hide current
+  const prev = document.getElementById('p'+current);
+  if(prev) prev.classList.remove('active');
+
+  current = n;
+  const page = document.getElementById('p'+current);
+  if(page) page.classList.add('active');
+
+  // play sounds per page (user gesture -> allowed)
+  if(current === 1){
+    // gentle fanfare/applause when landing on first page (if user navigated back)
+    safePlay(fanfare);
+  } else if(current === 2){
+    safePlay(applause);
+  } else if(current === 3){
+    // start rocket animation and schedule explosion
+    startRocketSequence();
+  } else if(current === 4){
+    // celebration sound for page 4
+    safePlay(applause);
+  } else if(current === 5){
+    safePlay(fanfare);
   }
 }
+
+/* ---------- rocket + explosion sequence on p3 ---------- */
+function startRocketSequence(){
+  const rocket = document.getElementById('rocketEl');
+  const birthdayText = document.getElementById('birthdayText');
+  const note = document.getElementById('note');
+  const nextBtn = document.getElementById('next3');
+
+  // reset visibility & classes
+  birthdayText.style.display = 'none';
+  note.style.display = 'none';
+  nextBtn.style.display = 'none';
+  rocket.classList.remove('launch');
+
+  // small delay then launch
+  setTimeout(()=>{
+    rocket.classList.add('launch');        // CSS transition moves it up
+    // small rocket whoosh sound can be added if wanted
+  }, 150);
+
+  // when rocket reaches top (~2.2s), explode:
+  setTimeout(()=>{
+    // play explosion audio
+    safePlay(explode);
+
+    // create visual confetti/explosion particles
+    const centerX = window.innerWidth/2;
+    const centerY = window.innerHeight/2 - 40;
+    createExplosion(centerX, centerY, 120);
+
+    // after short delay show text and next button
+    setTimeout(()=>{
+      birthdayText.style.display = 'block';
+      note.style.display = 'block';
+      nextBtn.style.display = 'inline-block';
+      // applause after explosion for celebration
+      setTimeout(()=> safePlay(applause), 200);
+    }, 600);
+  }, 2300);
+}
+
+/* ---------- confetti/explosion visual (small divs) ---------- */
+function createExplosion(x, y, count){
+  const colors = ['#FF5C8A','#FFD166','#74C69D','#9AD0EC','#C77DFF','#FFB347','#FFF176'];
+  for(let i=0;i<count;i++){
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.width = (6 + Math.random()*8) + 'px';
+    el.style.height = (8 + Math.random()*10) + 'px';
+    el.style.left = (x - 6 + Math.random()*12) + 'px';
+    el.style.top  = (y - 6 + Math.random()*12) + 'px';
+    el.style.background = colors[Math.floor(Math.random()*colors.length)];
+    el.style.opacity = 1;
+    el.style.transform = `translate(0px,0px) rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(el);
+
+    // compute random outward vector
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 60 + Math.random()*280;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    const rot = (Math.random()*720 - 360);
+
+    // animate using transition
+    el.style.transition = `${800 + Math.random()*1200}ms cubic-bezier(.12,.7,.3,1), opacity 1200ms linear`;
+    // force reflow
+    void el.offsetWidth;
+    el.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+    el.style.opacity = 0;
+
+    // remove after transition
+    setTimeout(()=>{ try{ el.remove() } catch(e){} }, 2200 + Math.random()*1000);
+  }
+}
+
+/* ---------- small fireworks canvas background (continuous) ---------- */
+(function setupCanvas(){
+  const canvas = document.getElementById('fireworksCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const particles = [];
+  function spawnSmallFirework(){
+    // create a small burst at random near center after p3 started — but we keep it lightweight
+    const cx = canvas.width/2 + (Math.random()-0.5)*200;
+    const cy = canvas.height/2 + (Math.random()-0.5)*100;
+    for(let i=0;i<30;i++){
+      particles.push({
+        x: cx, y: cy,
+        vx: (Math.random()-0.5)*6,
+        vy: (Math.random()-0.5)*6,
+        life: 30 + Math.random()*50,
+        color: `hsl(${Math.random()*360}, 100%, 60%)`
+      });
+    }
+  }
+
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.life--;
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y, Math.max(1, 3*(p.life/60)), 0, Math.PI*2); ctx.fill();
+      if(p.life<=0) particles.splice(i,1);
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  // only occasionally spawn (we'll spawn on explosion explicitly above)
+  // but spawn subtle ones every few seconds while on page3:
+  let p3Active = false;
+  const obs = new MutationObserver(()=> {
+    const isP3 = document.getElementById('p3').classList.contains('active');
+    if(isP3 && !p3Active){
+      p3Active = true;
+      // start small bursts
+      window._p3Interval = setInterval(spawnSmallFirework, 800);
+    } else if(!isP3 && p3Active){
+      p3Active = false;
+      clearInterval(window._p3Interval);
+    }
+  });
+  obs.observe(document.getElementById('p3'), {attributes:true, attributeFilter:['class']});
+})();
+
+/* ---------- start-up: ensure audio decoding for better responsiveness ---------- */
+window.addEventListener('load', ()=> {
+  [applause, explode, fanfare].forEach(a => {
+    if(a && a.preload !== 'none'){
+      // try to load
+      a.load();
+    }
+  });
+});
+</script>
+</body>
+</html>
